@@ -77,20 +77,29 @@ for model_name in user_input:
 
 ollama_dict = {}
 ollama_list_full = ollama.list()
+vision_modules = ["clip", "gemma3"]
 for ollama_model in ollama_list_full["models"]:
     if ollama_model["model"] in model_list:
-        if "clip" in ollama.show(ollama_model["model"])["details"]["families"]:
-            try:
-                ollama_dict[ollama_model["model"]] = {"name": ollama_model["model"],
-                                                     "disk_size": ollama_model["size"],
-                                                     "param_size": ollama_model["details"]["parameter_size"],
-                                                     "quant": ollama_model["details"]["quantization_level"],
-                                                     "hash": ollama_model["digest"]}
-            except Exception:
-                print(f'Something went wrong with {ollama_model["model"]}. Excluding model and moving on.')
-                print()
-                continue
-        else:
+        has_module = False
+        got_exception = False
+        for module in vision_modules:
+            if module in ollama.show(ollama_model["model"])["details"]["families"]:
+                try:
+                    ollama_dict[ollama_model["model"]] = {"name": ollama_model["model"],
+                                                         "disk_size": ollama_model["size"],
+                                                         "param_size": ollama_model["details"]["parameter_size"],
+                                                         "quant": ollama_model["details"]["quantization_level"],
+                                                         "hash": ollama_model["digest"]}
+                    has_module = True
+                    break
+                except Exception:
+                    got_exception = True
+                    break
+        if got_exception:
+            print(f'Something went wrong with {ollama_model["model"]}. Excluding model and moving on.')
+            print()
+            continue
+        if not has_module:
             print(f'Model {ollama_model["model"]} is not a multimodal vision model. Excluding model and moving on.')
             print()
             continue
